@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atrapa los Regalos</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(#CCFFAA, #D9D9D9);
+        }
+
+        #game-container {
+            position: relative;
+            width: 400px;
+            height: 600px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            overflow: hidden;
+            display: none;
+        }
+
+        #target {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 48px;
+            cursor: grab;
+        }
+
+        .gift {
+            position: absolute;
+            font-size: 24px;
+            animation: fall 5s linear;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(100vh);
+            }
+        }
+
+        #score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 18px;
+            color: #333;
+        }
+
+        #time {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 18px;
+            color: #333;
+        }
+
+        #instructions-box {
+            text-align: center;
+            font-family: 'Helvetica', sans-serif;
+            background-color: #AAAAFF;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        #instructions {
+            font-weight: bold;
+        }
+
+        #start-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        #game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 96px;
+            color: red;
+            display: none;
+        }
+
+        #message-box {
+            position: absolute;
+            top: 60%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20px;
+            color: #333;
+            text-align: center;
+            display: none;
+            background-color: #FFE4B5;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        #reset-button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="instructions-box">
+        <p>
+            <strong>¡Atrapa los regalos con el 🎯!</strong> Solo tienes 30 segundos para sumar todos los puntos. 🌵👠🏠✨<br> 
+            <strong>Instrucciones:</strong><br>
+            Movimiento: Usa el mouse para mover el 🎯 de derecha a izquierda.<br> 
+            Objetivo: ¡Atrapa la mayor cantidad de regalos posible!<br>
+            Cuidado: Si atrapas el emoji 🤖, ¡pierdes el juego!
+        </p>
+        <button id="start-button">Jugar</button>
+    </div>
+
+    <div id="game-container">
+        <div id="target">🎯</div>
+        <div id="score">Puntuación: <span id="score-value">0</span></div>
+        <div id="time">Tiempo: <span id="time-value">30</span></div> 
+        <div id="game-over">❌</div>
+        <div id="message-box">
+            <p>Como dice el refrán, 'que la rutina de la vida no te gane'.</p>
+            <p>¡No dejes que la monotonía apague tu llama! Sigue buscando oportunidades para llenar tus días de color y emoción.</p>
+            <p><strong>Síguenos para más consejos</strong></p>
+        </div>
+        <button id="reset-button">Reiniciar</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const instructionsBox = document.getElementById('instructions-box');
+            const gameContainer = document.getElementById('game-container');
+            const target = document.getElementById('target');
+            const scoreValue = document.getElementById('score-value');
+            const timeValue = document.getElementById('time-value');
+            const gameOverScreen = document.getElementById('game-over');
+            const messageBox = document.getElementById('message-box');
+            const resetButton = document.getElementById('reset-button');
+            const startButton = document.getElementById('start-button');
+
+            let score = 0;
+            let time = 30;
+            let gameOver = false;
+
+            function updateScore() {
+                scoreValue.innerText = score;
+            }
+
+            function updateTime() {
+                timeValue.innerText = time;
+            }
+
+            function moveTargetTo(x) {
+                const containerRect = gameContainer.getBoundingClientRect();
+                const targetWidth = target.offsetWidth;
+                const newX = Math.min(containerRect.width - targetWidth, Math.max(0, x - containerRect.left - targetWidth / 2));
+                target.style.left = newX + 'px';
+            }
+
+            target.addEventListener('mousedown', function (event) {
+                event.preventDefault();
+                target.style.cursor = 'grabbing';
+
+                function handleMouseMove(event) {
+                    moveTargetTo(event.clientX);
+                }
+
+                function handleMouseUp() {
+                    target.style.cursor = 'grab';
+                    document.removeEventListener('mousemove', handleMouseMove);
+                    document.removeEventListener('mouseup', handleMouseUp);
+                }
+
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('mouseup', handleMouseUp);
+            });
+
+            startButton.addEventListener('click', function () {
+                instructionsBox.style.display = 'none';
+                gameContainer.style.display = 'block';
+                startGame();
+            });
+
+            resetButton.addEventListener('click', function () {
+                resetGame();
+            });
+
+            function startGame() {
+                score = 0;
+                time = 30;
+                gameOver = false;
+                updateScore();
+                updateTime();
+                gameOverScreen.style.display = 'none';
+                messageBox.style.display = 'none';
+                resetButton.style.display = 'none';
+
+                // Limpiar regalos anteriores
+                const previousGifts = document.querySelectorAll('.gift');
+                previousGifts.forEach(gift => gameContainer.removeChild(gift));
+
+                const gameInterval = setInterval(function () {
+                    if (gameOver) return;
+
+                    const gifts = ['🌵', '👠', '🏠', '✨', '🖼️', '💖', '🤖'];
+                    const randomGift = gifts[Math.floor(Math.random() * gifts.length)];
+
+                    const gift = document.createElement('div');
+                    gift.className = 'gift';
+                    gift.style.left = Math.random() * 350 + 'px';
+                    gift.innerHTML = randomGift;
+
+                    gameContainer.appendChild(gift);
+
+                    const fallInterval = setInterval(function () {
+                        const targetRect = target.getBoundingClientRect();
+                        const giftRect = gift.getBoundingClientRect();
+
+                        if (
+                            giftRect.bottom > targetRect.top && 
+                            giftRect.top < targetRect.bottom && 
+                            giftRect.right > targetRect.left && 
+                            giftRect.left < targetRect.right 
+                        ) {
+                            if (gift.innerHTML === '🤖') {
+                                // Perder el juego si atrapa el emoji 🤖
+                                gameOver = true;
+                                gameOverScreen.style.display = 'block';
+                                messageBox.style.display = 'block';
+                                resetButton.style.display = 'block';
+                                clearInterval(gameInterval);
+                                clearInterval(timeInterval);
+                                return;
+                            }
+
+                            // Gift caught
+                            score += 5;  
+                            updateScore();
+                            gameContainer.removeChild(gift);
+                            clearInterval(fallInterval);
+                        } else if (giftRect.bottom > 600) {
+                            // Gift missed
+                            gameContainer.removeChild(gift);
+                            clearInterval(fallInterval);
+                        }
+                    }, 10);
+                }, 1000);
+
+                const timeInterval = setInterval(function () {
+                    time--;
+                    updateTime();
+
+                    if (time === 0) {
+                        clearInterval(gameInterval);
+                        clearInterval(timeInterval);
+                        alert(`¡Juego terminado! Tu puntuación final es ${score}`);
+                        resetButton.style.display = 'block';
+                    }
+                }, 1000);
+            }
+
+            function resetGame() {
+                score = 0;
+                time = 30;
+                gameOverScreen.style.display = 'none';
+                messageBox.style.display = 'none';
+                resetButton.style.display = 'none';
+                gameContainer.style.display = 'none';
+                instructionsBox.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
